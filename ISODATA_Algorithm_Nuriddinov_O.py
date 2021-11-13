@@ -1,14 +1,13 @@
-import numpy as np
-import math as m
-import matplotlib.pyplot as plt
+import numpy as np # массивтермен жұмыс жасау үшін
+import math as m # математикалық функциялар үшін
+import matplotlib.pyplot as plt # визуализация үшін
 
+# кластерлердің классы
 class Cluster:
-    merged = False
-    splitted = False
-    def __init__(self, pixels, center):
+    def __init__(self, pixels, center): # класстың конструкторы, класты құрғанда пикселдер мен центін береміз
         self.pixels = pixels
         self.center = center
-    
+    # класты екіге бөлуге арналған функция, кірісті 1 клатер қабылдайды, шығыста 2 кластер қайтарады
     def split(cluster):
         gamma = 0.5
         c1 = np.array([0, 0])
@@ -29,7 +28,7 @@ class Cluster:
         cluster1 = Cluster(np.array(pixels1), c1)
         cluster2 = Cluster(np.array(pixels2), c2)
         return cluster1, cluster2
-        
+    # кластерлерді біріктіруге арналған функция, параметрлері біріктірілетін 2 клас, қайтаратын мәні біріккен 1 класс
     def merge(cluster1, cluster2):
         center1 = cluster1.center
         center2 = cluster2.center
@@ -39,6 +38,7 @@ class Cluster:
         new_center = np.array([x,y])
         new_cluster = Cluster(pixels, new_center)
         return new_cluster
+    # кластерді өшіруге арналған функция, бұл кластердің пикселдерін басқа кластерлерге беріп, бұл кластерді жадыдан өшіреді
     def delete(clusters, number):
         for i in clusters[number].pixels:
             mn = float("inf")
@@ -52,7 +52,7 @@ class Cluster:
             temp.append(i)
             clusters[mn_j].pixels = np.array(temp)
         del clusters[number]
-        
+    # стандартты ауытқуды есептеуге арналған функция
     def std(self):
         x = 0
         y = 0
@@ -63,8 +63,10 @@ class Cluster:
         x = m.sqrt(x/len(pixels))
         y = m.sqrt(y/len(pixels))
         return np.array([x, y])
+    # центр мен пикселдер ара қашықтығын есептеуге арналған функция
     def distance(pixel, center):
         return m.sqrt((pixel[0] - center[0])**2 + (pixel[1] - center[1])**2)
+    # әлі кластерлерге бөлінбеген пикселдерді берілген центрлер бойынша кластерлерге бөлуге арналған функция
     def distribute(pixels, centers):
         pxs = list()
         for i in range(len(centers)):
@@ -83,7 +85,7 @@ class Cluster:
         for i in range(len(centers)):
             clusters[i] = Cluster(np.array(pxs[i]), centers[i])
         return clusters
-
+    # кластерлерді экранға шыгаруға ареалған функция
     def print_clusters(clusters):
         for i in range(len(clusters)):
             print('Center ', i, ': ', clusters[i].center)
@@ -98,15 +100,19 @@ class Cluster:
 # qc - параметр, характеризующий компактность
 # l -  максимальное количество пар центров кластеров, которые можно объединить
 # i - допустимое число циклов итерации
-def isodata(pixels, centers, Nc=1, z1=[0,0],  k=2, qn=2, qs=0.2, qc=0.01, l=5, iter=10):
+
+
+# ISODATA алгоритміне арналған функция
+def isodata(pixels, centers, Nc=1, z1=[0,0],  k=2, qn=2, qs=0.2, qc=10, l=5, iter=10):
     clusters = Cluster.distribute(pixels, centers)
     for t in range(iter):
         stop = True
+        # 7-шагтағы шарт орындалмай қалғанға дейін цикл қайталана береді
         while stop:
             j = 0
             for i in range(len(clusters)):
                 if len(clusters[j].pixels) < qn:
-                    Cluster.delete(clusters, j)
+                    Cluster.delete(clusters, j) # кластерде пикселдер саны qn нен аз болса онда кластерді өшіреміз
                 else:
                     j += 1
             for i in clusters:
@@ -147,16 +153,15 @@ def isodata(pixels, centers, Nc=1, z1=[0,0],  k=2, qn=2, qs=0.2, qc=0.01, l=5, i
                         mx_i = i
                 if std_mx > qs:
                     split = True
-                    cltr1, cltr2 = Cluster.split(clusters[mx_i])
+                    cltr1, cltr2 = Cluster.split(clusters[mx_i]) # стандартты ауытқу qs - тен үлкен болса класты бөлеміз
                     clusters.append(cltr1)
                     clusters.append(cltr2)
                     del clusters[mx_i]
                     Nc += 1
-                if ~split:
+                if ~split: #егер кластер бөлінбесе 11-шагқа өтеміз
                     break
-            print('Hello')
-            # Cluster.print_clusters(clusters)
             break
+        # 11 - шаг
         Dij = np.full((len(clusters), len(clusters)), 0.0)
         mn = float("inf")
         mn_i = float("inf")
@@ -169,27 +174,36 @@ def isodata(pixels, centers, Nc=1, z1=[0,0],  k=2, qn=2, qs=0.2, qc=0.01, l=5, i
                     mn_i = i
                     mn_j = j
         if(mn < qc):
-            # print('New: ', Cluster.merge(clusters[mn_i], clusters[mn_j]).pixels)
-            print('-----first---')
-            Cluster.print_clusters(clusters)
             clusters.append(Cluster.merge(clusters[mn_i], clusters[mn_j]))
-            print('-----second---')
-            Cluster.print_clusters(clusters)
             del clusters[mn_i]
             del clusters[mn_j-1]
         else:
             break
-    # Cluster.print_clusters(clusters)
     return clusters
         
 
-            
-pixels = np.array([[2,3],[3,4],[4,5],[5,6],[6,3],[1,6],[8,12],[0,1],[7,9]])
+# бастапқы, ешқандай кластерге бөлінбеген пикселдер            
+pixels = np.array([[2,3],[3,4],[4,5],[5,6],[6,3],[1,6],[8,12],[5,1],[7,9]])
+# бастапқы центрлер 
 centers = np.array([[2,5], [1,1], [7,9]])
 
+# бастапқы пикселдер мен центрлерді негізгі функцияға береміз
 clstrs = isodata(pixels = pixels, centers = centers)
+# нәтижені консольге шыгарамыз
 Cluster.print_clusters(clstrs)
 
-colors = ['red', 'green','pink','yellow','black','gray']
-for i in pixels:
-    plt.scatter(i[0], i[1])
+
+# визуализация жасаймыз
+colors = ['red','green','pink','black','orange']
+plt.figure()
+for i in range(len(pixels)):
+    plt.scatter(pixels[i][0], pixels[i][1], c='blue')
+for i in range(len(centers)):
+    plt.scatter(centers[i][0], centers[i][1], marker="^", c=colors[i], linewidths=(12), alpha=(0.5))
+
+plt.figure()
+for i in range(len(clstrs)):
+    plt.scatter(clstrs[i].center[0], clstrs[i].center[1], marker="^", c=colors[i], linewidths=(12), alpha=(0.5))
+    for j in clstrs[i].pixels:
+        plt.scatter(j[0], j[1], c=colors[i])
+ 
